@@ -1,27 +1,31 @@
 import { useState } from "react";
-import { getPokemonList, getPokemonDetalle } from "../services/pokeService";
+import { getPokemonDetalle, getPokemonList } from "../services/pokeService";
 
 export const usePokemon = () => {
-    const [pokemons, setPokemons] = useState<any[]>([]);
-    const [cargando, setcargando] = useState(false);
+
+    const [pokemons, setPokemons] = useState([]);
+    const [cargando, setCargando] = useState(false);
+    const [error, setError] = useState("");
 
     const fetchAllPokemons = async () => {
         try {
-            setcargando(true);
-            const listData = await getPokemonList(30);
-            
-            const detailPromises = listData.results.map((p: any) => 
-                getPokemonDetalle(p.url)
+            setCargando(true);
+            setError("");
+            const data = await getPokemonList(50);
+            const detalles = await Promise.all(
+                data.results.map(async (pokemon) => {
+                    return await getPokemonDetalle(pokemon.url);
+                })
             );
-            
-            const fullDetails = await Promise.all(detailPromises);
-            setPokemons(fullDetails);
-        } catch (error) {
-            console.error('Error fetching pokemons: ', error);
+
+            setPokemons(detalles);
+
+        } catch (err) {
+            setError("Error al cargar los pokémons");
         } finally {
-            setcargando(false);
+            setCargando(false);
         }
     };
 
-    return { pokemons, cargando, fetchAllPokemons };
+    return { pokemons, cargando, error, fetchAllPokemons };
 };
